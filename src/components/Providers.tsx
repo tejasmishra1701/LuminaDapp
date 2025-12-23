@@ -27,7 +27,7 @@ const monadSepolia = {
   name: 'Monad Sepolia',
   nativeCurrency: { name: 'MON', symbol: 'MON', decimals: 18 },
   rpcUrls: {
-    default: { http: ['https://rpc-devnet.monad.xyz/'] },
+    default: { http: ['https://testnet-rpc.monad.xyz'] },
   },
   blockExplorers: {
     default: { name: 'MonadExplorer', url: 'https://explorer.monad-devnet.xyz/' },
@@ -48,7 +48,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
   return (
     <WagmiProvider config={config}>
       <QueryClientProvider client={queryClient}>
-        <RainbowKitProvider 
+        <RainbowKitProvider
           theme={darkTheme({
             accentColor: '#FF8C00',
             accentColorForeground: 'white',

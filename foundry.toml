@@ -1,0 +1,15 @@
+[profile.default]
+src = "src_contract"
+out = "out"
+libs = ["lib"]
+remappings = [
+    "forge-std/=lib/forge-std/src/",
+    "openzeppelin-contracts/=lib/openzeppelin-contracts/"
+]
+
+# Monad Sepolia Configuration
+[rpc_endpoints]
+monad_sepolia = "${NEXT_PUBLIC_MONAD_RPC_URL}"
+
+[etherscan]
+monad_sepolia = { key = "UNUSED", url = "https://explorer.monad-devnet.xyz/api" }
