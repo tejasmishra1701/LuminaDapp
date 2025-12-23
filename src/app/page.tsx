@@ -311,37 +311,45 @@ function ImageDisplay({ src }: { src: string }) {
   const [error, setError] = useState(false);
 
   return (
-    <div className="relative group">
+    <div className="relative group mt-4 rounded-xl overflow-hidden border border-radiant-orange/30 shadow-[0_0_20px_rgba(255,140,0,0.15)] group-hover:shadow-[0_0_30px_rgba(255,140,0,0.3)] transition-all duration-500">
       {loading && (
-        <div className="w-full aspect-video bg-white/5 animate-pulse rounded-xl flex items-center justify-center border border-white/10">
-          <Loader2 className="w-6 h-6 text-radiant-orange animate-spin" />
-          <span className="ml-3 text-[10px] font-mono text-radiant-orange uppercase tracking-widest">Synthesizing Pixels...</span>
+        <div className="w-full aspect-video bg-white/5 animate-pulse rounded-xl flex items-center justify-center border border-white/5">
+          <div className="flex flex-col items-center gap-4">
+            <Loader2 className="w-8 h-8 text-radiant-orange animate-spin" />
+            <span className="text-[10px] font-mono text-radiant-orange uppercase tracking-[0.3em] font-bold">Radiant Synthesis...</span>
+          </div>
         </div>
       )}
-      <img
-        src={src}
-        alt="Radiant AI Synthesis"
-        onLoad={() => setLoading(false)}
-        onError={() => { setLoading(false); setError(true); }}
-        className={`rounded-xl border border-white/10 shadow-2xl w-full object-cover aspect-video transition-all ${loading ? 'hidden' : 'block'} ${error ? 'opacity-20' : 'group-hover:opacity-90'}`}
-        loading="eager"
-      />
+      <div className="relative">
+        <img
+          src={src}
+          alt="Radiant AI Synthesis"
+          onLoad={() => setLoading(false)}
+          onError={() => { setLoading(false); setError(true); }}
+          className={`w-full h-auto object-cover aspect-video transition-all duration-1000 ${loading ? 'opacity-0 scale-95' : 'opacity-100 scale-100'} ${error ? 'hidden' : 'block'}`}
+          loading="eager"
+        />
+        {!loading && !error && (
+          <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent pointer-events-none" />
+        )}
+      </div>
+
       {error && (
-        <div className="absolute inset-0 flex flex-col items-center justify-center text-center p-4">
-          <p className="text-red-400 text-xs font-bold mb-2 uppercase tracking-widest">Synthesis Failed</p>
-          <p className="text-neutral-500 text-[10px] max-w-[200px]">The radiant gate to the synthesis engine is currently unstable.</p>
+        <div className="p-8 flex flex-col items-center justify-center text-center bg-obsidian/80 backdrop-blur-sm">
+          <p className="text-red-400 text-xs font-bold mb-2 uppercase tracking-widest">Synthesis Unstable</p>
+          <p className="text-neutral-500 text-[10px] max-w-[200px] leading-relaxed">The radiant gate to the synthesis engine is currently out of sync.</p>
         </div>
       )}
+
       {!loading && !error && (
-        <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black/40 rounded-xl">
+        <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-300 bg-black/40 backdrop-blur-[2px]">
           <a
             href={src}
             target="_blank"
             rel="noopener noreferrer"
-            className="bg-white/10 backdrop-blur-md border border-white/20 px-4 py-2 rounded-full text-xs font-bold hover:bg-radiant-orange hover:text-obsidian transition-all"
-            title="Open original synthesis in synthesis engine (Pollinations)"
+            className="bg-radiant-orange text-obsidian px-6 py-2.5 rounded-full text-[10px] font-black uppercase tracking-[0.2em] hover:scale-105 active:scale-95 transition-all shadow-[0_0_20px_#FF8C00]"
           >
-            OPEN ENGINE SOURCE
+            Open Engine Source
           </a>
         </div>
       )}

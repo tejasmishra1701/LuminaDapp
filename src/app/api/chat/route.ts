@@ -94,7 +94,7 @@ export async function POST(req: NextRequest) {
                         }
 
                         if (prompt) {
-                            responseText = `https://pollinations.ai/p/${encodeURIComponent(prompt)}?width=1024&height=1024&seed=${Math.floor(Math.random() * 1000000)}&model=flux`;
+                            responseText = `https://pollinations.ai/p/${encodeURIComponent(prompt)}?width=1024&height=1024&seed=${Math.floor(Math.random() * 1000000)}&model=flux&nologo=true`;
                         }
                     }
                 } catch (e) {
@@ -106,7 +106,7 @@ export async function POST(req: NextRequest) {
             if (!responseText.startsWith('http')) {
                 // Remove the "action" JSON if it's there but parsing failed (using [\s\S] for multiline)
                 const simplified = responseText.replace(/\{[\s\S]*\}/, '').trim() || responseText;
-                responseText = `https://pollinations.ai/p/${encodeURIComponent(simplified.substring(0, 500))}?width=1024&height=1024&model=flux`;
+                responseText = `https://pollinations.ai/p/${encodeURIComponent(simplified.substring(0, 500))}?width=1024&height=1024&model=flux&nologo=true`;
             }
         }
 
@@ -121,15 +121,21 @@ export async function POST(req: NextRequest) {
 
             const amount = type === 'image' ? parseEther('0.003') : parseEther('0.001');
 
-            const { request } = await publicClient.simulateContract({
-                account,
-                address: contractAddress,
-                abi: ABI,
-                functionName: 'debit',
-                args: [walletAddress as `0x${string}`, amount],
-            });
+            try {
+                const { request } = await publicClient.simulateContract({
+                    account,
+                    address: contractAddress,
+                    abi: ABI,
+                    functionName: 'debit',
+                    args: [walletAddress as `0x${string}`, amount],
+                    gas: 100000n,
+                });
 
-            await walletClient.writeContract(request);
+                const hash = await walletClient.writeContract(request);
+                console.log(`Relayer debit success: ${hash}`);
+            } catch (txError: any) {
+                console.error("Relayer debit failed:", txError.message);
+            }
         }
 
         // 4. Update MongoDB
