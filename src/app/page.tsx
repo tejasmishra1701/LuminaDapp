@@ -5,7 +5,7 @@ import { ConnectButton } from '@rainbow-me/rainbowkit';
 import { useAccount, useWriteContract, useWaitForTransactionReceipt, useReadContract } from 'wagmi';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FuelMeter } from '@/components/FuelMeter';
-import { Zap, Bot, Image as ImageIcon, ShieldCheck, Send, Loader2, PlusCircle, BatteryCharging } from 'lucide-react';
+import { Zap, Bot, Image as ImageIcon, ShieldCheck, Send, Loader2, PlusCircle, BatteryCharging, ExternalLink } from 'lucide-react';
 import { parseEther, formatEther } from 'viem';
 
 const CONTRACT_ADDRESS = process.env.NEXT_PUBLIC_LUMINA_FUEL_ADDRESS as `0x${string}`;
@@ -240,7 +240,7 @@ export default function LandingPage() {
                       }`}>
                       {m.type === 'image' && m.role === 'assistant' ? (
                         <div className="space-y-4 min-w-[300px]">
-                          {m.content.startsWith('http') ? (
+                          {(m.content.startsWith('http') || m.content.startsWith('data:image')) ? (
                             <ImageDisplay src={m.content} />
                           ) : (
                             <div className="p-4 bg-red-500/10 border border-red-500/20 rounded-xl">
@@ -320,14 +320,17 @@ function ImageDisplay({ src }: { src: string }) {
           </div>
         </div>
       )}
-      <div className="relative">
+      <div className={`relative aspect-video ${error ? 'hidden' : 'block'}`}>
         <img
           src={src}
           alt="Radiant AI Synthesis"
           onLoad={() => setLoading(false)}
-          onError={() => { setLoading(false); setError(true); }}
-          className={`w-full h-auto object-cover aspect-video transition-all duration-1000 ${loading ? 'opacity-0 scale-95' : 'opacity-100 scale-100'} ${error ? 'hidden' : 'block'}`}
-          loading="eager"
+          onError={() => {
+            console.error("Image Synthesis Failed for source:", src);
+            setLoading(false);
+            setError(true);
+          }}
+          className={`w-full h-auto object-cover transition-all duration-1000 ${loading ? 'opacity-0 scale-95' : 'opacity-100 scale-100'}`}
         />
         {!loading && !error && (
           <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent pointer-events-none" />
@@ -338,6 +341,12 @@ function ImageDisplay({ src }: { src: string }) {
         <div className="p-8 flex flex-col items-center justify-center text-center bg-obsidian/80 backdrop-blur-sm">
           <p className="text-red-400 text-xs font-bold mb-2 uppercase tracking-widest">Synthesis Unstable</p>
           <p className="text-neutral-500 text-[10px] max-w-[200px] leading-relaxed">The radiant gate to the synthesis engine is currently out of sync.</p>
+          <button
+            onClick={() => { setError(false); setLoading(true); }}
+            className="mt-4 text-[10px] text-radiant-orange underline uppercase tracking-widest hover:text-white transition-colors"
+          >
+            Retry Synthesis
+          </button>
         </div>
       )}
 
@@ -345,11 +354,12 @@ function ImageDisplay({ src }: { src: string }) {
         <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-300 bg-black/40 backdrop-blur-[2px]">
           <a
             href={src}
+            download="lumina-radiant-synthesis.png"
             target="_blank"
             rel="noopener noreferrer"
-            className="bg-radiant-orange text-obsidian px-6 py-2.5 rounded-full text-[10px] font-black uppercase tracking-[0.2em] hover:scale-105 active:scale-95 transition-all shadow-[0_0_20px_#FF8C00]"
+            className="bg-radiant-orange text-obsidian px-6 py-2.5 rounded-full text-[10px] font-black uppercase tracking-[0.2em] hover:scale-105 active:scale-95 transition-all shadow-[0_0_20px_#FF8C00] flex items-center gap-2"
           >
-            Open Engine Source
+            {src.startsWith('data:') ? 'Download Synthesis' : 'Open Engine Source'} <ExternalLink className="w-3 h-3" />
           </a>
         </div>
       )}
