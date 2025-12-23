@@ -13,17 +13,18 @@ contract LuminaFuel {
     }
 
     modifier onlyOwner() {
-        require(msg.sender == owner, "Only owner can call this function");
+        require(msg.sender == owner, "LuminaFuel: caller is not the owner");
         _;
     }
 
     function deposit() public payable {
+        require(msg.value > 0, "LuminaFuel: deposit amount must be greater than zero");
         balances[msg.sender] += msg.value;
         emit Deposited(msg.sender, msg.value);
     }
 
     function debit(address user, uint256 amount) public onlyOwner {
-        require(balances[user] >= amount, "Insufficient fuel balance");
+        require(balances[user] >= amount, "LuminaFuel: insufficient fuel balance");
         balances[user] -= amount;
         emit Debited(user, amount);
     }
@@ -33,6 +34,8 @@ contract LuminaFuel {
     }
 
     function withdraw() public onlyOwner {
-        payable(owner).transfer(address(this).balance);
+        uint256 amount = address(this).balance;
+        require(amount > 0, "LuminaFuel: nothing to withdraw");
+        payable(owner).transfer(amount);
     }
 }

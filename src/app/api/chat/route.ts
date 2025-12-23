@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { GoogleGenerativeAI } from '@google/generative-ai';
-import { createPublicClient, createWalletClient, http, parseEther, hexToBytes } from 'viem';
+import { createPublicClient, createWalletClient, http, parseEther, formatEther, hexToBytes } from 'viem';
 import { privateKeyToAccount } from 'viem/accounts';
 import { monadSepolia } from '@/components/Providers'; // I should export it or redefine it
 import connectDB from '@/lib/db';
@@ -44,21 +44,27 @@ export async function POST(req: NextRequest) {
 
         // 1. Verify Fuel Balance on-chain
         const contractAddress = process.env.NEXT_PUBLIC_LUMINA_FUEL_ADDRESS as `0x${string}`;
-        if (!contractAddress) {
-            // Mock for now if no address
-            console.warn("LuminaFuel contract address not set. Skipping on-chain check.");
-        } else {
-            const balance = await publicClient.readContract({
-                address: contractAddress,
-                abi: ABI,
-                functionName: 'getBalance',
-                args: [walletAddress as `0x${string}`],
-            }) as bigint;
+        const adminKey = process.env.ADMIN_PRIVATE_KEY;
 
-            const required = type === 'image' ? parseEther('0.003') : parseEther('0.001');
-            if (balance < required) {
-                return NextResponse.json({ error: 'Insufficient fuel. Please deposit MON.' }, { status: 402 });
-            }
+        if (!contractAddress || !adminKey) {
+            console.error("CRITICAL: Missing fuel contract address or admin private key in environment.");
+            return NextResponse.json({
+                error: 'Backend system synchronization error. Please contact administrator (Check Environment Configuration).'
+            }, { status: 500 });
+        }
+
+        const balance = await publicClient.readContract({
+            address: contractAddress,
+            abi: ABI,
+            functionName: 'getBalance',
+            args: [walletAddress as `0x${string}`],
+        }) as bigint;
+
+        const required = type === 'image' ? parseEther('0.003') : parseEther('0.001');
+        console.log(`User: ${walletAddress}, Balance: ${formatEther(balance)} MON, Required: ${formatEther(required)} MON`);
+
+        if (balance < required) {
+            return NextResponse.json({ error: 'Insufficient fuel. Please deposit MON.' }, { status: 402 });
         }
 
         // 2. Call Gemini API
@@ -90,31 +96,41 @@ export async function POST(req: NextRequest) {
         }
 
         // 4. Trigger Debit on-chain (Admin Relayer)
-        if (contractAddress && process.env.ADMIN_PRIVATE_KEY) {
-            const account = privateKeyToAccount(process.env.ADMIN_PRIVATE_KEY as `0x${string}`);
-            const walletClient = createWalletClient({
+        const account = privateKeyToAccount(adminKey as `0x${string}`);
+        console.log(`Relayer Address: ${account.address}`);
+
+        const walletClient = createWalletClient({
+            account,
+            chain: monadSepolia,
+            transport: http(process.env.NEXT_PUBLIC_MONAD_RPC_URL || 'https://testnet-rpc.monad.xyz'),
+        });
+
+        const amount = type === 'image' ? parseEther('0.003') : parseEther('0.001');
+
+        try {
+            console.log(`Attempting to debit ${formatEther(amount)} MON from ${walletAddress}...`);
+
+            // Fix: Pre-fetch gas data to prevent "undefined BigInt" error on testnets
+            const gasPrice = await publicClient.getGasPrice();
+            console.log(`Current Gas Price: ${formatEther(gasPrice)} MON`);
+
+            const { request } = await publicClient.simulateContract({
                 account,
-                chain: monadSepolia,
-                transport: http(process.env.NEXT_PUBLIC_MONAD_RPC_URL || 'https://testnet-rpc.monad.xyz'),
+                address: contractAddress,
+                abi: ABI,
+                functionName: 'debit',
+                args: [walletAddress as `0x${string}`, amount],
+                gas: 200000n, // Increased buffer for stability
+                gasPrice: gasPrice, // Explicitly provide gasPrice
             });
 
-            const amount = type === 'image' ? parseEther('0.003') : parseEther('0.001');
-
-            try {
-                const { request } = await publicClient.simulateContract({
-                    account,
-                    address: contractAddress,
-                    abi: ABI,
-                    functionName: 'debit',
-                    args: [walletAddress as `0x${string}`, amount],
-                    gas: 100000n,
-                });
-
-                const hash = await walletClient.writeContract(request);
-                console.log(`Relayer debit success: ${hash}`);
-            } catch (txError: any) {
-                console.error("Relayer debit failed:", txError.message);
-            }
+            const hash = await walletClient.writeContract(request);
+            console.log(`Relayer debit success. Tx Hash: ${hash}`);
+        } catch (txError: any) {
+            console.error("Relayer debit failed strictly:", txError.message);
+            return NextResponse.json({
+                error: `Fuel debit failure: ${txError.message}. Ensure admin wallet has MON and is the contract owner.`
+            }, { status: 500 });
         }
 
         // 4. Update MongoDB
