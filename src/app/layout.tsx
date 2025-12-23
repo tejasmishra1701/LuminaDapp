@@ -16,6 +16,9 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "Lumina AI | Premium AI DApp",
   description: "Experience the next generation of AI on Monad. Obsidian sleek design, radiant power.",
+  icons: {
+    icon: "/logo.png",
+  },
 };
 
 export default function RootLayout({

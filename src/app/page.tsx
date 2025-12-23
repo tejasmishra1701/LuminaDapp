@@ -110,11 +110,18 @@ export default function LandingPage() {
 
       {/* Navigation */}
       <nav className="p-6 flex justify-between items-center relative z-10 max-w-7xl mx-auto w-full">
-        <div className="flex items-center gap-2">
-          <div className="w-8 h-8 bg-radiant-orange rounded-lg flex items-center justify-center shadow-[0_0_15px_rgba(255,140,0,0.5)]">
-            <Zap className="text-obsidian w-5 h-5 fill-current" />
+        <div className="flex items-center gap-3 group cursor-pointer" onClick={startNewChat}>
+          <div className="relative">
+            <div className="absolute inset-0 bg-radiant-orange/20 blur-xl rounded-full group-hover:bg-radiant-orange/40 transition-all duration-500" />
+            <img
+              src="/logo.png"
+              alt="Lumina AI Logo"
+              className="w-10 h-10 relative z-10 rounded-xl border border-white/10 shadow-[0_0_20px_rgba(255,140,0,0.3)] group-hover:scale-110 transition-transform duration-500 object-contain bg-obsidian/50 p-1"
+            />
           </div>
-          <span className="text-2xl font-bold tracking-tighter text-white uppercase">LUMINA <span className="text-radiant-orange">AI</span></span>
+          <span className="text-2xl font-black tracking-tighter text-white uppercase group-hover:text-radiant-orange transition-colors duration-500">
+            LUMINA <span className="text-radiant-orange">AI</span>
+          </span>
         </div>
         <div className="flex items-center gap-6">
           {isConnected && (
