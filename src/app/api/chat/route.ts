@@ -104,8 +104,8 @@ export async function POST(req: NextRequest) {
 
             // If we still haven't converted to a URL, use the whole text as a prompt
             if (!responseText.startsWith('http')) {
-                // Remove the "action" JSON if it's there but parsing failed
-                const simplified = responseText.replace(/\{.*\}/s, '').trim() || responseText;
+                // Remove the "action" JSON if it's there but parsing failed (using [\s\S] for multiline)
+                const simplified = responseText.replace(/\{[\s\S]*\}/, '').trim() || responseText;
                 responseText = `https://pollinations.ai/p/${encodeURIComponent(simplified.substring(0, 500))}?width=1024&height=1024&model=flux`;
             }
         }
