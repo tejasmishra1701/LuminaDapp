@@ -9,19 +9,9 @@ import { FuelBalance } from '@/models/FuelBalance';
 
 const genAI = new GoogleGenerativeAI(process.env.GOOGLE_API_KEY || '');
 
-// Define Monad Sepolia Chain (re-defined here for backend use)
-const monadSepoliaChain = {
-    id: 10143,
-    name: 'Monad Sepolia',
-    nativeCurrency: { name: 'MON', symbol: 'MON', decimals: 18 },
-    rpcUrls: {
-        default: { http: [process.env.NEXT_PUBLIC_MONAD_RPC_URL || 'https://testnet-rpc.monad.xyz'] },
-    },
-} as const;
-
 const publicClient = createPublicClient({
-    chain: monadSepoliaChain,
-    transport: http(),
+    chain: monadSepolia,
+    transport: http(process.env.NEXT_PUBLIC_MONAD_RPC_URL || 'https://testnet-rpc.monad.xyz'),
 });
 
 const ABI = [
@@ -125,8 +115,8 @@ export async function POST(req: NextRequest) {
             const account = privateKeyToAccount(process.env.ADMIN_PRIVATE_KEY as `0x${string}`);
             const walletClient = createWalletClient({
                 account,
-                chain: monadSepoliaChain,
-                transport: http(),
+                chain: monadSepolia,
+                transport: http(process.env.NEXT_PUBLIC_MONAD_RPC_URL || 'https://testnet-rpc.monad.xyz'),
             });
 
             const amount = type === 'image' ? parseEther('0.003') : parseEther('0.001');

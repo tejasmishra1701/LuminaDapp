@@ -22,7 +22,7 @@ import {
 import '@rainbow-me/rainbowkit/styles.css';
 
 // Define Monad Sepolia Chain
-const monadSepolia = {
+export const monadSepolia = {
   id: 10143,
   name: 'Monad Sepolia',
   nativeCurrency: { name: 'MON', symbol: 'MON', decimals: 18 },
