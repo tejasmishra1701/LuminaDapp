@@ -53,3 +53,95 @@ body {
 .animate-shimmer {
   animation: shimmer 2s infinite linear;
 }
+
+/* Markdown Styling */
+.prose {
+  color: #D4D4D4;
+}
+
+.prose h1,
+.prose h2,
+.prose h3 {
+  color: #FFFFFF;
+  font-weight: 800;
+  margin-top: 1.5em;
+  margin-bottom: 0.5em;
+  letter-spacing: -0.025em;
+}
+
+.prose h1 {
+  font-size: 1.5rem;
+}
+
+.prose h2 {
+  font-size: 1.25rem;
+}
+
+.prose h3 {
+  font-size: 1.125rem;
+}
+
+.prose p {
+  margin-bottom: 1em;
+  line-height: 1.6;
+}
+
+.prose strong {
+  color: var(--color-radiant-orange);
+  font-weight: 700;
+}
+
+.prose em {
+  color: #FFFFFF;
+  font-style: italic;
+}
+
+.prose ul,
+.prose ol {
+  margin-bottom: 1em;
+  padding-left: 1.5em;
+}
+
+.prose ul {
+  list-style-type: disc;
+}
+
+.prose ol {
+  list-style-type: decimal;
+}
+
+.prose li {
+  margin-bottom: 0.5em;
+}
+
+.prose code {
+  background: rgba(255, 140, 0, 0.1);
+  color: var(--color-radiant-orange);
+  padding: 0.2em 0.4em;
+  border-radius: 0.4em;
+  font-family: ui-monospace, monospace;
+  font-size: 0.9em;
+  border: 1px solid rgba(255, 140, 0, 0.2);
+}
+
+.prose pre {
+  background: #000000;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  padding: 1rem;
+  border-radius: 0.75rem;
+  overflow-x: auto;
+  margin-bottom: 1rem;
+}
+
+.prose pre code {
+  background: transparent;
+  padding: 0;
+  border: none;
+  color: #E2E8F0;
+}
+
+.prose a {
+  color: var(--color-radiant-orange);
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}

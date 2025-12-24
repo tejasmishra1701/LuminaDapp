@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { GoogleGenerativeAI } from '@google/generative-ai';
-import { createPublicClient, createWalletClient, http, parseEther, formatEther, hexToBytes } from 'viem';
+import { createPublicClient, createWalletClient, http, parseEther, formatEther } from 'viem';
 import { privateKeyToAccount } from 'viem/accounts';
 import { monadSepolia } from '@/components/Providers'; // I should export it or redefine it
 import connectDB from '@/lib/db';
 import { Conversation } from '@/models/Conversation';
-import { FuelBalance } from '@/models/FuelBalance';
+import { Message } from '@/models/Message';
 
 const genAI = new GoogleGenerativeAI(process.env.GOOGLE_API_KEY || '');
 
@@ -42,14 +42,15 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ error: 'Wallet not connected' }, { status: 400 });
         }
 
+        await connectDB();
+
         // 1. Verify Fuel Balance on-chain
         const contractAddress = process.env.NEXT_PUBLIC_LUMINA_FUEL_ADDRESS as `0x${string}`;
         const adminKey = process.env.ADMIN_PRIVATE_KEY;
 
         if (!contractAddress || !adminKey) {
-            console.error("CRITICAL: Missing fuel contract address or admin private key in environment.");
             return NextResponse.json({
-                error: 'Backend system synchronization error. Please contact administrator (Check Environment Configuration).'
+                error: 'Backend system synchronization error. Please contact administrator.'
             }, { status: 500 });
         }
 
@@ -61,31 +62,33 @@ export async function POST(req: NextRequest) {
         }) as bigint;
 
         const required = type === 'image' ? parseEther('0.003') : parseEther('0.001');
-        console.log(`User: ${walletAddress}, Balance: ${formatEther(balance)} MON, Required: ${formatEther(required)} MON`);
-
         if (balance < required) {
             return NextResponse.json({ error: 'Insufficient fuel. Please deposit MON.' }, { status: 402 });
         }
 
-        // 2. Call Gemini API
-        const model = genAI.getGenerativeModel({ model: type === 'image' ? 'gemini-2.5-flash-image' : 'gemini-3-flash-preview' });
+        // 2. Prepare Conversation
+        let activeConvId = conversationId;
+        let isNewChat = false;
 
+        if (!activeConvId) {
+            const newConv = await Conversation.create({ walletAddress, title: 'New Synthesis' });
+            activeConvId = newConv._id.toString();
+            isNewChat = true;
+        }
+
+        // 3. Call Gemini API
+        const model = genAI.getGenerativeModel({ model: type === 'image' ? 'gemini-2.5-flash-image' : 'gemini-3-flash-preview' });
         const lastMessage = messages[messages.length - 1].content;
         const result = await model.generateContent(lastMessage);
 
         let responseText = "";
-
-        // 3. Handle Gemini Native Image Generation
         if (type === 'image') {
-            // Check if Gemini returned an image
             const candidates = result.response.candidates;
             if (candidates && candidates[0].content.parts) {
                 const imagePart = candidates[0].content.parts.find(part => part.inlineData);
                 if (imagePart && imagePart.inlineData) {
                     responseText = `data:${imagePart.inlineData.mimeType};base64,${imagePart.inlineData.data}`;
                 } else {
-                    // Fallback: If no inlineData, check if it's text that we can use for a fallback if needed
-                    // but according to user, it should return base64 directly
                     responseText = result.response.text();
                 }
             } else {
@@ -97,65 +100,61 @@ export async function POST(req: NextRequest) {
 
         // 4. Trigger Debit on-chain (Admin Relayer)
         const account = privateKeyToAccount(adminKey as `0x${string}`);
-        console.log(`Relayer Address: ${account.address}`);
-
         const walletClient = createWalletClient({
             account,
             chain: monadSepolia,
             transport: http(process.env.NEXT_PUBLIC_MONAD_RPC_URL || 'https://testnet-rpc.monad.xyz'),
         });
 
-        const amount = type === 'image' ? parseEther('0.003') : parseEther('0.001');
-
         try {
-            console.log(`Attempting to debit ${formatEther(amount)} MON from ${walletAddress}...`);
-
-            // Fix: Pre-fetch gas data to prevent "undefined BigInt" error on testnets
             const gasPrice = await publicClient.getGasPrice();
-            console.log(`Current Gas Price: ${formatEther(gasPrice)} MON`);
-
             const { request } = await publicClient.simulateContract({
                 account,
                 address: contractAddress,
                 abi: ABI,
                 functionName: 'debit',
-                args: [walletAddress as `0x${string}`, amount],
-                gas: 200000n, // Increased buffer for stability
-                gasPrice: gasPrice, // Explicitly provide gasPrice
+                args: [walletAddress as `0x${string}`, required],
+                gas: 200000n,
+                gasPrice,
             });
-
-            const hash = await walletClient.writeContract(request);
-            console.log(`Relayer debit success. Tx Hash: ${hash}`);
+            await walletClient.writeContract(request);
         } catch (txError: any) {
             console.error("Relayer debit failed strictly:", txError.message);
-            return NextResponse.json({
-                error: `Fuel debit failure: ${txError.message}. Ensure admin wallet has MON and is the contract owner.`
-            }, { status: 500 });
+            return NextResponse.json({ error: `Fuel debit failure: ${txError.message}` }, { status: 500 });
         }
 
-        // 4. Update MongoDB
-        await connectDB();
-        if (conversationId) {
-            await Conversation.findByIdAndUpdate(conversationId, {
-                $push: {
-                    messages: [
-                        { role: 'user', content: lastMessage, type },
-                        { role: 'assistant', content: responseText, type }
-                    ]
-                }
-            });
-        } else {
-            const newConv = await Conversation.create({
-                walletAddress,
-                messages: [
-                    { role: 'user', content: lastMessage, type },
-                    { role: 'assistant', content: responseText, type }
-                ]
-            });
-            return NextResponse.json({ text: responseText, conversationId: newConv._id });
+        // 5. Persist Messages
+        await Message.create([
+            { conversationId: activeConvId, walletAddress, role: 'user', content: lastMessage, type },
+            { conversationId: activeConvId, walletAddress, role: 'assistant', content: responseText, type }
+        ]);
+
+        await Conversation.findByIdAndUpdate(activeConvId, { updatedAt: new Date() });
+
+        // 6. Generate Title if 3 prompts have been sent
+        // A prompt + response = 2 messages. 3 prompts = 6 messages.
+        const messageCount = await Message.countDocuments({ conversationId: activeConvId });
+
+        if (messageCount === 6) {
+            try {
+                // Fetch all messages for context
+                const history = await Message.find({ conversationId: activeConvId }).sort({ createdAt: 1 });
+                const context = history.map(m => `${m.role}: ${m.content}`).join('\n');
+
+                const titleModel = genAI.getGenerativeModel({ model: 'gemini-3-flash-preview' });
+                const titleResult = await titleModel.generateContent(`Generate a concise 3-word title for this obsidian-themed AI chat based on this interaction context:\n${context.slice(0, 2000)}\n\nRespond ONLY with the 3 words.`);
+                const title = titleResult.response.text().trim().replace(/["']/g, '');
+                await Conversation.findByIdAndUpdate(activeConvId, { title });
+            } catch (titleError) {
+                console.error("Delayed title generation failed:", titleError);
+            }
         }
 
-        return NextResponse.json({ text: responseText });
+        return NextResponse.json({
+            text: responseText,
+            conversationId: activeConvId,
+            isNewChat
+        });
 
     } catch (error: any) {
         console.error('Chat error:', error);
