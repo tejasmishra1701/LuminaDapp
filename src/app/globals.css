@@ -16,6 +16,27 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
+/* Radiant Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 140, 0, 0.2);
+  border-radius: 10px;
+  border: 1px solid rgba(255, 140, 0, 0.1);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-radiant-orange);
+  box-shadow: 0 0 10px var(--color-radiant-glow);
+}
+
 @keyframes pulse-glow {
   0% {
     box-shadow: 0 0 0 0 rgba(255, 140, 0, 0.4);

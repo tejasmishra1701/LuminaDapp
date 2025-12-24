@@ -78,8 +78,28 @@ export async function POST(req: NextRequest) {
 
         // 3. Call Gemini API
         const model = genAI.getGenerativeModel({ model: type === 'image' ? 'gemini-2.5-flash-image' : 'gemini-3-flash-preview' });
-        const lastMessage = messages[messages.length - 1].content;
-        const result = await model.generateContent(lastMessage);
+
+        // Fetch previous messages for context
+        let chatHistory: { role: string; parts: { text: string }[] }[] = [];
+        if (activeConvId) {
+            const previousMessages = await Message.find({ conversationId: activeConvId })
+                .sort({ createdAt: -1 })
+                .limit(20);
+
+            // Reverse to restore chronological order for Gemini
+            chatHistory = previousMessages.reverse().map(msg => ({
+                role: msg.role === 'user' ? 'user' : 'model',
+                parts: [{ text: msg.content }],
+            }));
+        }
+
+        const lastMessageContent = messages[messages.length - 1].content;
+
+        const chat = model.startChat({
+            history: chatHistory,
+        });
+
+        const result = await chat.sendMessage(lastMessageContent);
 
         let responseText = "";
         if (type === 'image') {
@@ -125,7 +145,7 @@ export async function POST(req: NextRequest) {
 
         // 5. Persist Messages
         await Message.create([
-            { conversationId: activeConvId, walletAddress, role: 'user', content: lastMessage, type },
+            { conversationId: activeConvId, walletAddress, role: 'user', content: lastMessageContent, type },
             { conversationId: activeConvId, walletAddress, role: 'assistant', content: responseText, type }
         ]);
 

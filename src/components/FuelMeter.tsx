@@ -31,9 +31,6 @@ export function FuelMeter({ balance, isLoading }: FuelMeterProps) {
                         style={{ backgroundSize: '200% 100%' }} />
                 )}
             </div>
-            <p className="text-[10px] text-neutral-500 italic">
-                0.01 MON / msg • 0.05 MON / img
-            </p>
         </div>
     );
 }

@@ -65,7 +65,7 @@ export default function LandingPage() {
                       className="px-8 py-4 bg-radiant-orange text-obsidian font-black rounded-2xl hover:scale-110 active:scale-95 transition-all shadow-[0_0_30px_rgba(255,140,0,0.3)] group flex items-center gap-3 text-lg"
                     >
                       <Bot className="w-6 h-6 group-hover:rotate-12 transition-transform" />
-                      NEW SYNTHESIS
+                      CONNECT YOUR WALLET TO GET STARTED
                     </button>
                   ) : (
                     <div className="flex flex-col items-center gap-6">
@@ -89,23 +89,73 @@ export default function LandingPage() {
           </ConnectButton.Custom>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 text-left">
-          <FeatureCard
-            icon={<Bot className="w-6 h-6 text-radiant-orange" />}
-            title="Hyper-Logic"
-            description="Ultra-low latency reasoning powered by the latest Gemini architecture."
-          />
-          <FeatureCard
-            icon={<ImageIcon className="w-6 h-6 text-radiant-orange" />}
-            title="Radiant Vision"
-            description="High-fidelity image synthesis with direct on-chain fuel consumption."
-          />
-          <FeatureCard
-            icon={<ShieldCheck className="w-6 h-6 text-radiant-orange" />}
-            title="On-Chain Fuel"
-            description="Sovereign micro-billing on Monad. 0.001 MON/text, 0.003 MON/image."
-          />
-        </div>
+        {!isConnected ? (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 text-left">
+            <FeatureCard
+              icon={<Bot className="w-6 h-6 text-radiant-orange" />}
+              title="Hyper-Logic"
+              description="Ultra-low latency reasoning powered by the latest Gemini architecture."
+            />
+            <FeatureCard
+              icon={<ImageIcon className="w-6 h-6 text-radiant-orange" />}
+              title="Radiant Vision"
+              description="High-fidelity image synthesis with direct on-chain fuel consumption."
+            />
+            <FeatureCard
+              icon={<ShieldCheck className="w-6 h-6 text-radiant-orange" />}
+              title="On-Chain Fuel"
+              description="Sovereign micro-billing on Monad. 0.001 MON/text, 0.003 MON/image."
+            />
+          </div>
+        ) : (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="grid grid-cols-1 md:grid-cols-2 gap-8 text-left"
+          >
+            <div className="p-8 rounded-2xl bg-[#0F0F0F] border border-radiant-orange/20 shadow-[0_0_30px_rgba(255,140,0,0.05)]">
+              <h3 className="text-xl font-bold text-white mb-6 flex items-center gap-3">
+                <div className="w-2 h-2 bg-radiant-orange rounded-full animate-pulse" />
+                OPERATIONAL DIRECTIVES
+              </h3>
+              <div className="space-y-6">
+                <div className="group">
+                  <p className="text-[10px] font-black text-radiant-orange uppercase tracking-widest mb-1">01. Fuel Authorization</p>
+                  <p className="text-sm text-neutral-400 leading-relaxed">
+                    The Obsidian engine requires <span className="text-white font-medium">MON Fuel</span> to synthesize responses. Use the <span className="text-radiant-orange font-bold uppercase tracking-tighter">Refill</span> button in the header to authorize a 0.1 MON deposit. Every interaction is settled on-chain.
+                  </p>
+                </div>
+                <div className="group">
+                  <p className="text-[10px] font-black text-radiant-orange uppercase tracking-widest mb-1">02. Synthesis Modes</p>
+                  <p className="text-sm text-neutral-400 leading-relaxed">
+                    Toggle between <span className="text-white font-medium">TEXT</span> and <span className="text-white font-medium">IMAGE</span> synthesis in the header. Text synthesis consumes 0.001 MON, while high-fidelity image generation requires 0.003 MON.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="p-8 rounded-2xl bg-[#0F0F0F] border border-white/5">
+              <h3 className="text-xl font-bold text-white mb-6 flex items-center gap-3">
+                <div className="w-2 h-2 bg-white/20 rounded-full" />
+                SYSTEM ARCHITECTURE
+              </h3>
+              <div className="space-y-6">
+                <div className="group">
+                  <p className="text-[10px] font-black text-white/30 uppercase tracking-widest mb-1">03. Context Persistence</p>
+                  <p className="text-sm text-neutral-400 leading-relaxed">
+                    All síntesis logs are stored securely and indexed by your wallet address. Use the sidebar to navigate between different historical cores or delete inactive sessions.
+                  </p>
+                </div>
+                <div className="group">
+                  <p className="text-[10px] font-black text-white/30 uppercase tracking-widest mb-1">04. Session Sovereignty</p>
+                  <p className="text-sm text-neutral-400 leading-relaxed">
+                    You maintain full control over your session. Deauthorize your connection using the logout icon in the sidebar footer to clear the active interface state.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </motion.div>
+        )}
       </div>
     </main>
   );

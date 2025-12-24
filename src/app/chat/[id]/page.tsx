@@ -49,9 +49,16 @@ export default function ChatPage() {
     // Auto-scroll to bottom
     useEffect(() => {
         if (scrollRef.current) {
-            scrollRef.current.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' });
+            const scrollContainer = scrollRef.current;
+            // Use requestAnimationFrame to ensure the DOM has updated
+            requestAnimationFrame(() => {
+                scrollContainer.scrollTo({
+                    top: scrollContainer.scrollHeight,
+                    behavior: 'smooth'
+                });
+            });
         }
-    }, [messages, isLoading]);
+    }, [messages, isLoading, isMessageLoading]);
 
     // Fetch existing messages if not new
     useEffect(() => {
@@ -184,14 +191,24 @@ export default function ChatPage() {
                 </div>
 
                 <div className="flex items-center gap-4">
-                    <FuelMeter balance={fuelPercentage} isLoading={isConfirming} />
+                    <div className="flex flex-col items-end gap-1">
+                        <FuelMeter balance={fuelPercentage} isLoading={isConfirming} />
+                        <p className="text-[10px] text-neutral-500 italic">0.001 MON / msg • 0.003 MON / img</p>
+                    </div>
                     <button
                         onClick={handleDeposit}
                         disabled={isConfirming}
-                        className="bg-white/5 hover:bg-radiant-orange/20 border border-white/10 hover:border-radiant-orange/40 p-2 rounded-lg transition-all group"
-                        title="Deposit Fuel (0.1 MON)"
+                        className="bg-white/5 hover:bg-radiant-orange/20 border border-white/10 hover:border-radiant-orange/40 px-4 py-2 rounded-lg transition-all group flex items-center gap-2"
+                        title="Authorize Fuel Deposit (0.1 MON)"
                     >
-                        {isConfirming ? <Loader2 className="w-4 h-4 animate-spin text-radiant-orange" /> : <BatteryCharging className="w-4 h-4 text-radiant-orange group-hover:scale-110 transition-transform" />}
+                        {isConfirming ? (
+                            <Loader2 className="w-4 h-4 animate-spin text-radiant-orange" />
+                        ) : (
+                            <>
+                                <BatteryCharging className="w-4 h-4 text-radiant-orange group-hover:scale-110 transition-transform" />
+                                <span className="text-xs uppercase tracking-widest text-radiant-orange font-bold">REFILL</span>
+                            </>
+                        )}
                     </button>
                 </div>
             </header>
@@ -199,7 +216,7 @@ export default function ChatPage() {
             {/* Messages Area */}
             <div
                 ref={scrollRef}
-                className="flex-1 overflow-y-auto p-6 space-y-6 scroll-smooth scrollbar-hide"
+                className="flex-1 overflow-y-auto p-6 space-y-6 scroll-smooth"
             >
                 <div className="max-w-4xl mx-auto w-full space-y-8 pb-32">
                     <AnimatePresence mode="wait">

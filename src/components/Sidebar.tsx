@@ -96,7 +96,7 @@ export function Sidebar() {
             </div>
 
             {/* Chat List */}
-            <div className="flex-1 overflow-y-auto px-4 space-y-2 scrollbar-hide">
+            <div className="flex-1 overflow-y-auto px-4 space-y-2">
                 <div className="text-[10px] font-bold text-white/30 uppercase tracking-[0.2em] px-2 mb-4">Verification Logs</div>
 
                 {loading && chats.length === 0 ? (
